@@ -28,16 +28,14 @@ executable server-exe
   ghc-options:
     -rtsopts
     -threaded
-    -Wall
-    -Werror
     -O2
     -optc-O3
     -optc-ffast-math
     -funfolding-use-threshold=16
-    -with-rtsopts=-N
+    -Wall
   ghc-prof-options:
-    -threaded
     -rtsopts
+    -threaded
     -fprof-auto
     -fprof-cafs
     "-with-rtsopts=-N -p -s -h -i0.1"
@@ -73,6 +71,11 @@ library
   ghc-options:
     -Wall
     -Werror
+    -O2
+    -optc-O3
+    -optc-ffast-math
+    -funfolding-use-threshold=16
+
   ghc-prof-options:
     -fprof-auto
     -fprof-cafs
