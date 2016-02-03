@@ -12,12 +12,12 @@ import           Debug.Trace
 default (Text)
 
 
-testMethod :: Int -> RpcMethodT IO Text
-testMethod = return . show
+testMethod :: Int -> Int -> RpcMethodT IO Int
+testMethod a b = return $! a + b
 
 main :: IO ()
 main = do
     traceIO "---->"
-    let methodMap =  Map.fromList [("test", rpcMethod testMethod)]
+    let methodMap =  Map.fromList [("sum", rpcMethod testMethod)]
     serveRpc 128 (serverSettings 5252 "*") methodMap
 
