@@ -23,6 +23,7 @@ module Network.MsgpackRpc.Server
     , module Network.MsgpackRpc.Exception
 
     , serveRpc
+    , runRpcServer
 
     , rpcMethod
     , RpcMethod
