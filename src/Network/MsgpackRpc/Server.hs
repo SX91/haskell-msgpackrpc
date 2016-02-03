@@ -58,14 +58,18 @@ serveClient :: (MonadBaseControl IO m, MonadThrow m, MonadCatch m, MonadIO m)
             -> RpcT m ()
 serveClient methodMap = go
   where
-    go = receiveMessage >>= maybe stop (\msg -> processMessage msg >> go)
-
-    stop = return ()
+    go = do
+        msg <- receiveMessage
+        case msg of
+            Nothing -> return ()
+            Just r -> processMessage r >> go
 
     processMessage Request{..} =
-        void . forkRpcT $ handleRequest msgid method args
+        -- void . forkRpcT $ handleRequest msgid method args
+        handleRequest msgid method args
     processMessage Notify{..} =
-        void . forkRpcT $ handleNotify method args
+        -- void . forkRpcT $ handleNotify method args
+        handleNotify method args
     processMessage Response{} = return ()
 
     execMethod method args = do
@@ -96,7 +100,7 @@ runRpcServer :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
               -> RpcT m ()
               -> m ()
 runRpcServer qSize ss f =
-    runGeneralTCPServer ss $ \ad -> do
+    runGeneralTCPServer ss $ \ad ->
         execRpcT qSize (appSink ad) (appSource ad) f
 
 serveRpc :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
