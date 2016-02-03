@@ -29,10 +29,8 @@ executable server-exe
     -rtsopts
     -threaded
     -O2
-    -optc-O3
-    -optc-ffast-math
-    -funfolding-use-threshold=16
     -Wall
+--    -fllvm
   ghc-prof-options:
     -rtsopts
     -threaded
@@ -72,9 +70,7 @@ library
     -Wall
     -Werror
     -O2
-    -optc-O3
-    -optc-ffast-math
-    -funfolding-use-threshold=16
+--    -fllvm
 
   ghc-prof-options:
     -fprof-auto
