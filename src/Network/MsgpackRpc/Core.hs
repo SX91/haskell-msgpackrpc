@@ -151,7 +151,6 @@ execRpcT :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
         -> RpcT m a  -- ^ RpcT to run.
         -> m a
 execRpcT qSize sink source f = do
-    traceM "execRpcT begin"
     session@Session{..} <- liftIO . atomically $ newSession qSize
     let inSink = sinkTBMChan inChan True
         outSource = sourceTBMChan outChan
@@ -164,7 +163,6 @@ execRpcT qSize sink source f = do
             liftIO $ do
                 atomically $ closeSession session
                 void $ wait o
-            traceM "execRpcT end"
             return res
   where
     handler session err = do

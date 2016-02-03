@@ -59,14 +59,13 @@ serveClient methodMap = go
   where
     go = receiveMessage >>= maybe stop (\msg -> processMessage msg >> go)
 
-    stop = traceM "connection closed"
+    stop = return ()
 
     processMessage Request{..} =
         void . forkRpcT $ handleRequest msgid method args
     processMessage Notify{..} =
         void . forkRpcT $ handleNotify method args
-    processMessage Response{} =
-        traceM "Invalid message type for server: 'Reponse'"
+    processMessage Response{} = return ()
 
     execMethod method args = do
         f <- case Map.lookup method methodMap of
@@ -97,9 +96,7 @@ runRpcServer :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
               -> m ()
 runRpcServer qSize ss f =
     runGeneralTCPServer ss $ \ad -> do
-        traceM "New client thread"
         execRpcT qSize (appSink ad) (appSource ad) f
-        traceM "Client thread gone"
 
 serveRpc :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
          => Int
