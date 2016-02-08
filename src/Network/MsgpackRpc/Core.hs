@@ -19,6 +19,7 @@ module Network.MsgpackRpc.Core
     , Session
     , receiveMessage
     , sendMessage
+    , receiveForever
     , sendResponse
     , sendError
     , isClosed
@@ -102,6 +103,18 @@ sendMessage msg = do
     out <- reader outChan
     liftIO . atomically . writeTBMChan out $ msg
 {-# INLINABLE sendMessage #-}
+
+receiveForever :: (MonadIO m, MonadThrow m)
+               => (Message -> RpcT m ())
+               -> RpcT m ()
+receiveForever f = loop
+  where
+    loop = do
+        o <- receiveMessage
+        case o of
+            Nothing -> return ()
+            Just msg -> f msg >> loop
+{-# INLINABLE receiveForever #-}
 
 -- | Send RPC response message.
 -- Value is serialized internally.
