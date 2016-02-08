@@ -56,14 +56,8 @@ type RpcMethodMap m = Map Text (RpcMethod m)
 serveClient :: (MonadBaseControl IO m, MonadThrow m, MonadCatch m, MonadIO m)
             => RpcMethodMap m
             -> RpcT m ()
-serveClient methodMap = go
+serveClient methodMap = receiveForever processMessage
   where
-    go = do
-        msg <- receiveMessage
-        case msg of
-            Nothing -> return ()
-            Just r -> processMessage r >> go
-
     processMessage Request{..} =
         -- void . forkRpcT $ handleRequest msgid method args
         handleRequest msgid method args
@@ -73,21 +67,18 @@ serveClient methodMap = go
     processMessage Response{} = return ()
 
     execMethod method args = do
-        f <- case Map.lookup method methodMap of
-                 Nothing -> throwM $ noMethodError method
-                 Just f -> return f
-        lift $! methodBody f args
+        let throwNoMethod = throwM $! noMethodError method
+            execute f = lift $! methodBody f args
+        maybe throwNoMethod execute (Map.lookup method methodMap)
 
-    handleRequest msgid method args = do
-        res <- liftM Right (execMethod method args) `catches`
-            [ Handler
-                (\(err :: RpcError) -> return (Left err))
-            , Handler
-                (\(err :: SomeException) -> return . Left $! internalError err)
+    handleRequest msgid method args =
+        fmap Right (execMethod method args) `catches` handlers
+        >>= either (sendError msgid) (sendResponse msgid)
+      where
+        handlers = [
+              Handler (\(err :: RpcError) -> return (Left err))
+            , Handler (\(err :: SomeException) -> return . Left $! internalError err)
             ]
-        case res of
-            Left err -> sendError msgid err
-            Right val -> sendResponse msgid val
 
     handleNotify method args =
         void (execMethod method args) `catch` handler
