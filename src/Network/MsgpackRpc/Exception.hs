@@ -12,7 +12,8 @@ Stability   : Experimental
 
 module Network.MsgpackRpc.Exception
     (
-      rpcError
+      RpcError(..)
+    , rpcError
     , internalError
     , methodError
     , noMethodError
