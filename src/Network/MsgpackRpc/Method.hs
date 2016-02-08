@@ -25,6 +25,7 @@ module Network.MsgpackRpc.Method
 
 import           BasicPrelude
 import           Control.Monad.Catch
+import           Control.Monad.Trans
 
 import           Network.MsgpackRpc.Exception
 import           Network.MsgpackRpc.Spec
@@ -35,6 +36,10 @@ newtype RpcMethod m
 newtype RpcMethodT m a
     = RpcMethodT { runMethod :: m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow)
+
+instance MonadTrans RpcMethodT where
+    lift = RpcMethodT
+    {-# INLINE lift #-}
 
 class (Monad m, MonadThrow m) => RpcMethodType m f where
     toBody :: f -> [Object] -> m Object
