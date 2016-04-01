@@ -13,7 +13,6 @@ Stability   : Experimental
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
 
@@ -58,18 +57,16 @@ serveClient :: (MonadBaseControl IO m, MonadThrow m, MonadCatch m, MonadIO m)
             -> RpcT m ()
 serveClient methodMap = receiveForever processMessage
   where
-    processMessage Request{..} =
-        -- void . forkRpcT $ handleRequest msgid method args
-        handleRequest msgid method args
-    processMessage Notify{..} =
-        -- void . forkRpcT $ handleNotify method args
-        handleNotify method args
+    processMessage (Request msgid method args)  =
+        void . forkRpcT $ handleRequest msgid method args
+    processMessage (Notify method args) =
+        void . forkRpcT $ handleNotify method args
     processMessage Response{} = return ()
 
-    execMethod method args = do
-        let throwNoMethod = throwM $! noMethodError method
+    execMethod method args =
+        let throwNoMethod = throwM $ noMethodError method
             execute f = lift $! methodBody f args
-        maybe throwNoMethod execute (Map.lookup method methodMap)
+         in maybe throwNoMethod execute (Map.lookup method methodMap)
 
     handleRequest msgid method args =
         fmap Right (execMethod method args) `catches` handlers

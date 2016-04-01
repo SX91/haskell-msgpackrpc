@@ -10,12 +10,11 @@ Stability   : Stable
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 module Network.MsgpackRpc.Spec
     (
       Message(..)
-    , MessageId(..)
+    , MessageID(..)
     , MessageType(..)
 
     , RpcError(..)
@@ -39,7 +38,7 @@ instance Exception RpcError
 instance MessagePack RpcError where
     toObject (RpcError o) = o
     {-# INLINE toObject #-}
-    fromObject o = Just $! RpcError o
+    fromObject o = Just (RpcError o)
     {-# INLINE fromObject #-}
 
 --------------------------------------------------------------------------------
@@ -49,50 +48,33 @@ data MessageType = RequestMessage
   deriving (Show, Eq, Ord, Bounded, Enum)
 
 instance MessagePack MessageType where
-    toObject RequestMessage = toObject (0 :: Int)
-    toObject ResponseMessage = toObject (1 :: Int)
-    toObject NotifyMessage = toObject (2 :: Int)
+    toObject RequestMessage = ObjectUInt 0
+    toObject ResponseMessage = ObjectUInt 1
+    toObject NotifyMessage = ObjectUInt 2
     {-# INLINE toObject #-}
 
-    fromObject (ObjectInt i) = toEnumSafe i
-    fromObject _ = Nothing
+    fromObject o = toEnumSafe =<< fromObject o
     {-# INLINE fromObject #-}
 
-newtype MessageId = MessageId Int
+newtype MessageID = MessageID Word32
+  deriving (Show, Eq, Bounded, Ord)
+
+instance MessagePack MessageID where
+    toObject (MessageID i) = toObject i
+    {-# INLINE toObject #-}
+
+    fromObject o = MessageID <$> fromObject o
+    {-# INLINE fromObject #-}
+
+data Message = Request !MessageID !Text [Object]
+             | Response !MessageID !(Maybe RpcError) !(Maybe Object)
+             | Notify !Text [Object]
   deriving (Show, Eq, Ord)
 
-instance Bounded MessageId where
-    maxBound = MessageId maxBound
-    minBound = MessageId 0
-
-instance MessagePack MessageId where
-    toObject (MessageId i) = toObject i
-    {-# INLINE toObject #-}
-
-    fromObject o = MessageId <$> fromObject o
-    {-# INLINE fromObject #-}
-
-data Message
-    = Request
-    { msgid  :: {-# UNPACK #-} !MessageId
-    , method :: !Text
-    , args   :: [Object]
-    }
-    | Response
-    { msgid   :: {-# UNPACK #-} !MessageId
-    , failure :: !(Maybe RpcError)
-    , result  :: !(Maybe Object)
-    }
-    | Notify
-    { method :: !Text
-    , args   :: [Object]
-    }
-  deriving (Show, Eq)
-
 instance MessagePack Message where
-    toObject Request{..} = toObject (RequestMessage, msgid, method, args)
-    toObject Response{..} = toObject (ResponseMessage, msgid, failure, result)
-    toObject Notify{..} = toObject (NotifyMessage, method, args)
+    toObject (Request msgid method args) = toObject (RequestMessage, msgid, method, args)
+    toObject (Response msgid failure result) = toObject (ResponseMessage, msgid, failure, result)
+    toObject (Notify method args) = toObject (NotifyMessage, method, args)
     {-# INLINE toObject #-}
 
     fromObject (ObjectArray arr) =
@@ -107,23 +89,17 @@ instance MessagePack Message where
       where
         toRequest :: Vector Object -> Maybe Message
         toRequest [msgId, msgMethod, msgArgs] =
-            Request <$>
-              fromObject msgId <*>
-              fromObject msgMethod <*>
-              fromObject msgArgs
+            Request <$> fromObject msgId <*> fromObject msgMethod <*> fromObject msgArgs
         toRequest _ = Nothing
+
         toResponse :: Vector Object -> Maybe Message
         toResponse [msgId, msgError, msgResult] =
-            Response <$>
-              fromObject msgId <*>
-              fromObject msgError <*>
-              fromObject msgResult
+            Response <$> fromObject msgId <*> fromObject msgError <*> fromObject msgResult
         toResponse _ = Nothing
+
         toNotify :: Vector Object -> Maybe Message
         toNotify [msgMethod, msgArgs] =
-            Notify <$>
-              fromObject msgMethod <*>
-              fromObject msgArgs
+            Notify <$> fromObject msgMethod <*> fromObject msgArgs
         toNotify _ = Nothing
     fromObject _ = Nothing
     {-# INLINE fromObject #-}
