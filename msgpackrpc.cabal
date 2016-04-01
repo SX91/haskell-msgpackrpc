@@ -1,5 +1,5 @@
 name:                msgpackrpc
-version:             0.0.1.0
+version:             0.1.0.0
 synopsis:            MessagePack RPC implementation
 description:         Please see README.md
 homepage:            http://github.com/SimpleX91/haskell-msgpackrpc#readme
@@ -52,7 +52,7 @@ library
 
   build-depends:       base >= 4.7 && < 5
                      , basic-prelude
-                     , msgpack >= 1.0.0
+                     , msgpack >= 1.1.0
                      , bytestring
                      , containers
                      , vector
