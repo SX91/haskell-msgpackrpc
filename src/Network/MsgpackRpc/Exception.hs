@@ -32,10 +32,13 @@ rpcError errType errBody = RpcError $! toObject (errType, errBody)
 
 internalError :: (Exception e) => e -> RpcError
 internalError = rpcError ".InternalError" . show
+{-# INLINE internalError #-}
 
 methodError :: Text -> RpcError
 methodError = rpcError ".MethodError"
+{-# INLINE methodError #-}
 
 noMethodError :: Text -> RpcError
 noMethodError = rpcError ".MethodError.NoMethodError"
+{-# INLINE noMethodError #-}
 
