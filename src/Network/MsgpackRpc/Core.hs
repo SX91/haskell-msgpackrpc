@@ -8,6 +8,7 @@ Stability   : Stable
 -}
 
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -51,18 +52,12 @@ default (Text)
 --------------------------------------------------------------------------------
 type RpcT = ReaderT Session
 
-decodeConduit :: (Monad m, MonadThrow m, MessagePack o)
-              => Conduit ByteString m o
-decodeConduit = mapOutputMaybe fromObject conduitDecode
-{-# INLINABLE decodeConduit #-}
-
 encodeConduit :: (Monad m, MonadThrow m, MessagePack o)
               => Conduit o m ByteString
 encodeConduit = awaitForever (yield . BL.toStrict . pack)
-{-# INLINABLE encodeConduit #-}
+{-# INLINE encodeConduit #-}
 
-data Session
-    = Session
+data Session = Session
     { inChan  :: !(TBMChan Message)
     , outChan :: !(TBMChan Message)
     }
@@ -93,7 +88,7 @@ receiveMessage :: (MonadIO m, MonadThrow m)
 receiveMessage = do
     i <- reader inChan
     liftIO . atomically $! readTBMChan i
-{-# INLINABLE receiveMessage #-}
+{-# INLINE receiveMessage #-}
 
 -- | Send RPC message.
 sendMessage :: (MonadIO m, MonadThrow m)
@@ -102,7 +97,7 @@ sendMessage :: (MonadIO m, MonadThrow m)
 sendMessage msg = do
     out <- reader outChan
     liftIO . atomically . writeTBMChan out $ msg
-{-# INLINABLE sendMessage #-}
+{-# INLINE sendMessage #-}
 
 receiveForever :: (MonadIO m, MonadThrow m)
                => (Message -> RpcT m ())
@@ -114,17 +109,17 @@ receiveForever f = loop
         case o of
             Nothing -> return ()
             Just msg -> f msg >> loop
-{-# INLINABLE receiveForever #-}
+{-# INLINE receiveForever #-}
 
 -- | Send RPC response message.
 -- Value is serialized internally.
 sendResponse :: (MonadIO m, MonadThrow m, MessagePack o)
-             => MessageId  -- ^ Message ID.
+             => MessageID  -- ^ Message ID.
              -> o  -- ^ Response value.
              -> RpcT m ()
 sendResponse msgid obj =
     sendMessage $! Response msgid Nothing (Just $! toObject obj)
-{-# INLINABLE sendResponse #-}
+{-# INLINE sendResponse #-}
 
 -- | Send RPC error message.
 --
@@ -134,25 +129,33 @@ sendResponse msgid obj =
 -- To send any exception use `internalError`:
 -- > sendError msgid $ internalError (err :: SomeException)
 sendError :: (MonadIO m, MonadThrow m)
-             => MessageId  -- ^ Message ID.
+             => MessageID  -- ^ Message ID.
              -> RpcError  -- ^ Response error.
              -> RpcT m ()
 sendError msgid obj =
     sendMessage $! Response msgid (Just obj) Nothing
-{-# INLINABLE sendError #-}
+{-# INLINE sendError #-}
 
 -- | Check if session is closed.
 isClosed :: (MonadIO m)
          => RpcT m Bool
 isClosed = reader outChan >>= (liftIO . atomically . isClosedTBMChan)
-{-# INLINABLE isClosed #-}
+{-# INLINE isClosed #-}
 
 -- | Fork new RPC thread.
 forkRpcT :: (MonadBaseControl IO m, MonadIO m, MonadThrow m, MonadCatch m)
         => RpcT m a
         -> RpcT m ThreadId
-forkRpcT f = ask >>= fork . void . lift . runReaderT f
+forkRpcT f = fork . void . lift . runReaderT f =<< ask
 {-# INLINE forkRpcT #-}
+
+conduitRpcMsgDecode :: (Monad m, MonadThrow m)
+                     => Conduit ByteString m Message
+conduitRpcMsgDecode = conduitDecode =$= awaitForever (toMsg.fromObject)
+  where
+    toMsg (Just msg) = yield msg
+    toMsg Nothing = fail "incorrect packet format"
+{-# INLINE conduitRpcMsgDecode #-}
 
 -- | Execute RpcT.
 -- Can work with any Sink and Source.
@@ -167,7 +170,7 @@ execRpcT qSize sink source f = do
     session@Session{..} <- liftIO . atomically $ newSession qSize
     let inSink = sinkTBMChan inChan True
         outSource = sourceTBMChan outChan
-        sourcePipe = source =$= decodeConduit $$ inSink
+        sourcePipe = source =$= conduitRpcMsgDecode $$ inSink
         sinkPipe = outSource =$= encodeConduit $$ sink
 
     withAsync (sourcePipe `catch` handler session) $ const $
@@ -181,5 +184,5 @@ execRpcT qSize sink source f = do
     handler session err = do
         traceShowM (err :: SomeException)
         liftIO . atomically $ closeSession session
-        throwM $! ServerError "forcibly closed"
+        throwM $ ServerError "forcibly closed"
 
