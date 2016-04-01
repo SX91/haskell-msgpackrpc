@@ -35,7 +35,7 @@ newtype RpcMethod m
 
 newtype RpcMethodT m a
     = RpcMethodT { runMethod :: m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch)
 
 instance MonadTrans RpcMethodT where
     lift = RpcMethodT
@@ -46,7 +46,7 @@ class (Monad m, MonadThrow m) => RpcMethodType m f where
 
 instance (Functor m, MonadThrow m, MessagePack o) => RpcMethodType m (RpcMethodT m o) where
     toBody f [] = toObject <$> runMethod f
-    toBody _ _ = throwM $! methodError "invalid number of arguments"
+    toBody _ _ = throwM $ methodError "invalid number of arguments"
     {-# INLINE toBody #-}
 
 instance (MonadThrow m, MessagePack o, RpcMethodType m r) => RpcMethodType m (o -> r) where
