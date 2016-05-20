@@ -20,7 +20,7 @@ executable server-exe
   -- other-extensions:
   build-depends:       base
                      , basic-prelude
-                     , containers
+                     , unordered-containers
                      , mtl
                      , msgpackrpc
                      , exceptions
@@ -54,7 +54,7 @@ library
                      , basic-prelude
                      , msgpack >= 1.1.0
                      , bytestring
-                     , containers
+                     , unordered-containers
                      , vector
                      , mtl
                      , monad-control

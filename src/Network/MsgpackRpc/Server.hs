@@ -38,7 +38,7 @@ import           BasicPrelude                 hiding (catch, finally, try)
 import           Control.Monad.Catch
 import           Control.Monad.Trans.Control
 import           Data.Conduit.Network
-import qualified Data.Map                     as Map
+import qualified Data.HashMap.Strict          as HashMap
 
 import           Network.MsgpackRpc.Core
 import           Network.MsgpackRpc.Exception
@@ -50,7 +50,7 @@ import           Debug.Trace
 
 default (Text)
 
-type RpcMethodMap m = Map Text (RpcMethod m)
+type RpcMethodMap m = HashMap Text (RpcMethod m)
 
 serveClient :: (MonadBaseControl IO m, MonadThrow m, MonadCatch m, MonadIO m)
             => RpcMethodMap m
@@ -66,7 +66,7 @@ serveClient methodMap = receiveForever processMessage
     execMethod method args =
         let throwNoMethod = throwM $ noMethodError method
             execute f = lift $! methodBody f args
-         in maybe throwNoMethod execute (Map.lookup method methodMap)
+         in maybe throwNoMethod execute (HashMap.lookup method methodMap)
 
     handleRequest msgid method args =
         fmap Right (execMethod method args) `catches` handlers

@@ -3,7 +3,7 @@
 import           BasicPrelude              hiding (catch, finally, try)
 
 import           Control.Monad.Catch
-import qualified Data.Map                  as Map
+import qualified Data.HashMap.Strict       as HashMap
 
 import           Network.MsgpackRpc.Server
 
@@ -19,7 +19,7 @@ errorMethod = throwM $ rpcError ".MyRpc.SomeCoolError" ("WAT!?" :: Text)
 
 func :: IO ()
 func = do
-    let methodMap =  Map.fromList
+    let methodMap =  HashMap.fromList
             [
               ("sum", rpcMethod sumMethod)
             , ("error", rpcMethod errorMethod)
