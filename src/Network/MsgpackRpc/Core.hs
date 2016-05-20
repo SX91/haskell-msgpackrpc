@@ -40,8 +40,9 @@ import           Control.Monad.Trans.Control
 
 import qualified Data.ByteString.Lazy              as BL
 import           Data.Conduit
-import           Data.Conduit.Serialization.Binary
+import           Data.Conduit.Cereal
 import           Data.Conduit.TMChan
+import           Data.Serialize
 
 import           Network.MsgpackRpc.Spec
 
@@ -52,10 +53,10 @@ default (Text)
 --------------------------------------------------------------------------------
 type RpcT = ReaderT Session
 
-encodeConduit :: (Monad m, MonadThrow m, MessagePack o)
-              => Conduit o m ByteString
-encodeConduit = awaitForever (yield . BL.toStrict . pack)
-{-# INLINE encodeConduit #-}
+-- encodeConduit :: (Monad m, MonadThrow m, MessagePack o)
+--               => Conduit o m ByteString
+-- encodeConduit = awaitForever (yield . pack)
+-- {-# INLINE encodeConduit #-}
 
 data Session = Session
     { inChan  :: !(TBMChan Message)
@@ -151,11 +152,14 @@ forkRpcT f = fork . void . lift . runReaderT f =<< ask
 
 conduitRpcMsgDecode :: (Monad m, MonadThrow m)
                      => Conduit ByteString m Message
-conduitRpcMsgDecode = conduitDecode =$= awaitForever (toMsg.fromObject)
+conduitRpcMsgDecode = conduitGet2 get =$= awaitForever (toMsg.fromObject)
   where
     toMsg (Just msg) = yield msg
     toMsg Nothing = fail "incorrect packet format"
-{-# INLINE conduitRpcMsgDecode #-}
+
+conduitRpcMsgEncode :: (Monad m, MonadThrow m)
+                     => Conduit Message m ByteString
+conduitRpcMsgEncode = awaitForever (yield . toObject) =$= conduitPut put
 
 -- | Execute RpcT.
 -- Can work with any Sink and Source.
@@ -171,7 +175,7 @@ execRpcT qSize sink source f = do
     let inSink = sinkTBMChan inChan True
         outSource = sourceTBMChan outChan
         sourcePipe = source =$= conduitRpcMsgDecode $$ inSink
-        sinkPipe = outSource =$= encodeConduit $$ sink
+        sinkPipe = outSource =$= conduitRpcMsgEncode $$ sink
 
     withAsync (sourcePipe `catch` handler session) $ const $
         withAsync (sinkPipe `catch` handler session) $ \o -> do
