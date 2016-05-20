@@ -28,17 +28,16 @@ module Network.MsgpackRpc.Core
     , execRpcT
     ) where
 
-import           BasicPrelude                      hiding (catch, finally,
-                                                    handle, try)
+import           BasicPrelude                    hiding (catch, finally, handle,
+                                                  try)
 
 import           Control.Concurrent.Async.Lifted
-import           Control.Concurrent.Lifted         (ThreadId, fork)
+import           Control.Concurrent.Lifted       (ThreadId, fork)
 import           Control.Concurrent.STM
 import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Control
 
-import qualified Data.ByteString.Lazy              as BL
 import           Data.Conduit
 import           Data.Conduit.Cereal
 import           Data.Conduit.TMChan
@@ -59,8 +58,8 @@ type RpcT = ReaderT Session
 -- {-# INLINE encodeConduit #-}
 
 data Session = Session
-    { inChan  :: !(TBMChan Message)
-    , outChan :: !(TBMChan Message)
+    { inChan  :: TBMChan Message
+    , outChan :: TBMChan Message
     }
 
 newtype ServerError = ServerError Text
@@ -88,7 +87,7 @@ receiveMessage :: (MonadIO m, MonadThrow m)
                => RpcT m (Maybe Message)
 receiveMessage = do
     i <- reader inChan
-    liftIO . atomically $! readTBMChan i
+    liftIO $ atomically (readTBMChan i)
 {-# INLINE receiveMessage #-}
 
 -- | Send RPC message.
@@ -97,7 +96,7 @@ sendMessage :: (MonadIO m, MonadThrow m)
             -> RpcT m ()
 sendMessage msg = do
     out <- reader outChan
-    liftIO . atomically . writeTBMChan out $ msg
+    liftIO $ atomically (writeTBMChan out msg)
 {-# INLINE sendMessage #-}
 
 receiveForever :: (MonadIO m, MonadThrow m)
@@ -119,7 +118,7 @@ sendResponse :: (MonadIO m, MonadThrow m, MessagePack o)
              -> o  -- ^ Response value.
              -> RpcT m ()
 sendResponse msgid obj =
-    sendMessage $! Response msgid Nothing (Just $! toObject obj)
+    sendMessage $ Response msgid (Right $ toObject obj)
 {-# INLINE sendResponse #-}
 
 -- | Send RPC error message.
@@ -133,8 +132,9 @@ sendError :: (MonadIO m, MonadThrow m)
              => MessageID  -- ^ Message ID.
              -> RpcError  -- ^ Response error.
              -> RpcT m ()
-sendError msgid obj =
-    sendMessage $! Response msgid (Just obj) Nothing
+sendError msgid err =
+    sendMessage $ Response msgid (Left err)
+
 {-# INLINE sendError #-}
 
 -- | Check if session is closed.

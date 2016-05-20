@@ -27,7 +27,7 @@ rpcError :: (MessagePack o)
          => Text
          -> o
          -> RpcError
-rpcError errType errBody = RpcError $! toObject (errType, errBody)
+rpcError errCode = RpcError errCode . toObject
 {-# INLINE rpcError #-}
 
 internalError :: (Exception e) => e -> RpcError
@@ -35,10 +35,10 @@ internalError = rpcError ".InternalError" . show
 {-# INLINE internalError #-}
 
 methodError :: Text -> RpcError
-methodError = rpcError ".MethodError"
+methodError = rpcError ".CallError"
 {-# INLINE methodError #-}
 
 noMethodError :: Text -> RpcError
-noMethodError = rpcError ".MethodError.NoMethodError"
+noMethodError = rpcError ".CallError.NoMethodError"
 {-# INLINE noMethodError #-}
 

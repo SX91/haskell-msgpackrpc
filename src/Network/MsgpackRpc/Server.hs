@@ -74,7 +74,7 @@ serveClient methodMap = receiveForever processMessage
       where
         handlers = [
               Handler (\(err :: RpcError) -> return (Left err))
-            , Handler (\(err :: SomeException) -> return . Left $! internalError err)
+            , Handler (\(err :: SomeException) -> return . Left $ internalError err)
             ]
 
     handleNotify method args =

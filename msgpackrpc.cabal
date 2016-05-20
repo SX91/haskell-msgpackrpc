@@ -28,13 +28,13 @@ executable server-exe
   default-language:    Haskell2010
   ghc-options:
     -rtsopts
---    -threaded
+    -threaded
     -O2
     -Wall
---    -fllvm
+    "-with-rtsopts=-A2m -c"
   ghc-prof-options:
     -rtsopts
---    -threaded
+    -threaded
     -fprof-auto
     -fprof-cafs
     "-with-rtsopts=-p -s -h -i0.1"
@@ -70,10 +70,6 @@ library
   default-language:    Haskell2010
   ghc-options:
     -Wall
-    -Werror
-    -O2
---    -fllvm
-
   ghc-prof-options:
     -fprof-auto
     -fprof-cafs
