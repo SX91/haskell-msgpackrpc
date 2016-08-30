@@ -3,7 +3,7 @@ Module      : Network.MsgpackRpc.Util
 Description : Some stuff
 Copyright   : 2016 Anton Kondrachkov
 License     : BSD3
-Maintainer  : Anton Kondrachkov <SimpleX91@gmail.com>
+Maintainer  : Anton Kondrachkov <SX91@protonmail.com>
 Stability   : Stable
 -}
 

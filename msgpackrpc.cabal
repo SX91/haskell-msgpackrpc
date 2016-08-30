@@ -2,11 +2,11 @@ name:                msgpackrpc
 version:             0.1.0.0
 synopsis:            MessagePack RPC implementation
 description:         Please see README.md
-homepage:            http://github.com/SimpleX91/haskell-msgpackrpc#readme
+homepage:            http://github.com/SX91/haskell-msgpackrpc#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Anton Kondrachkov
-maintainer:          Anton Kondrachkov <simplex91@gmail.com>
+maintainer:          Anton Kondrachkov <sx91@protonmail.com>
 copyright:           2016 Anton Kondrachkov
 category:            Web
 build-type:          Simple
@@ -16,15 +16,12 @@ cabal-version:       >=1.10
 executable server-exe
   hs-source-dirs:      App
   main-is:             Main.hs
-  -- other-modules:
-  -- other-extensions:
   build-depends:       base
                      , basic-prelude
                      , unordered-containers
                      , mtl
                      , msgpackrpc
                      , exceptions
-  -- hs-source-dirs:
   default-language:    Haskell2010
   ghc-options:
     -rtsopts
@@ -76,6 +73,6 @@ library
 
 source-repository head
   type:     git
-  location: https://github.com/SimpleX91/haskell-msgpackrpc
+  location: https://github.com/SX91/haskell-msgpackrpc
 
 

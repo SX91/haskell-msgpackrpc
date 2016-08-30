@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/SimpleX91/haskell-msgpackrpc.svg?branch=master)](https://travis-ci.org/SimpleX91/haskell-msgpackrpc)
+[![Build Status](https://travis-ci.org/SX91/haskell-msgpackrpc.svg?branch=master)](https://travis-ci.org/SX91/haskell-msgpackrpc)
 # haskell-msgpackrpc
 MsgPack RPC implementation for Haskell (server side only, for now)
 

@@ -3,7 +3,7 @@ Module      : Network.MsgpackRpc.Core
 Description : MessagePack RPC core implementation for client and server
 Copyright   : 2016 Anton Kondrachkov
 License     : BSD3
-Maintainer  : Anton Kondrachkov <SimpleX91@gmail.com>
+Maintainer  : Anton Kondrachkov <SX91@protonmail.com>
 Stability   : Stable
 -}
 
